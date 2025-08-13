@@ -90,7 +90,8 @@ Options:
 |----------|---------|-------------------|
 | **OpenAI** | `gpt-4`, `gpt-4-turbo`, `gpt-4o`, `gpt-4o-mini`, `gpt-3.5-turbo` | tiktoken (official) |
 | **Claude** | `claude-3`, `claude-3-opus`, `claude-3-sonnet`, `claude-3-haiku`, `claude-3.5-sonnet`, `sonnet-4`, `opus-4.1` | Anthropic API (with fallback) |
-| **Open Source** | `bert`, `distilbert`, `t5`, `gpt2` | HuggingFace transformers |
+| **Open Source** | `bert`, `distilbert`, `t5`, `gpt2`, `phi-3`, `falcon-7b` | HuggingFace transformers |
+| **Mistral-Compatible** | `mistral-small3.2`, `magistral` | tiktoken (cl100k_base encoding) |
 
 ## 💡 Examples
 

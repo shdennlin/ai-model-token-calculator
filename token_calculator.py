@@ -77,6 +77,14 @@ MODEL_CONFIGS = {
     "distilbert": {"type": "hf", "model_name": "distilbert-base-uncased"},
     "t5": {"type": "hf", "model_name": "google-t5/t5-small"},
     "gpt2": {"type": "hf", "model_name": "openai-community/gpt2"},
+    
+    # Mistral-compatible models (open-source alternatives with longer context)
+    "mistral-small3.2": {"type": "openai", "encoding": "cl100k_base"},
+    "magistral": {"type": "openai", "encoding": "cl100k_base"},
+    
+    # Additional open-source models (publicly accessible)
+    "phi-3": {"type": "hf", "model_name": "microsoft/Phi-3-mini-4k-instruct"},
+    "falcon-7b": {"type": "hf", "model_name": "tiiuae/falcon-7b"},
 }
 
 class TokenCalculator:
@@ -164,7 +172,13 @@ class TokenCalculator:
                 return self._handle_anthropic_error(e, text, model_name)
         elif config["type"] == "hf":
             tokenizer = self.get_hf_tokenizer(config["model_name"])
-            return len(tokenizer.encode(text))
+            # Suppress warnings about sequence length and just count tokens
+            import warnings
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=UserWarning)
+                # Use add_special_tokens=False and truncation=False to just count tokens
+                tokens = tokenizer.encode(text, add_special_tokens=False, truncation=False)
+                return len(tokens)
         else:
             raise ValueError(f"Unknown tokenizer type: {config['type']}")
     
@@ -299,7 +313,7 @@ Examples:
 Supported models:
   OpenAI: gpt-4, gpt-4-turbo, gpt-4o, gpt-4o-mini, gpt-3.5-turbo
   Claude: claude-3, claude-3-opus, claude-3-sonnet, claude-3-haiku, claude-3.5-sonnet, sonnet-4, opus-4.1
-  Others: bert, distilbert, t5, gpt2
+  Open Source: bert, distilbert, t5, gpt2, mistral-small3.2, magistral, phi-3, falcon-7b
         """
     )
     
@@ -314,16 +328,24 @@ Supported models:
     
     if args.list_models:
         console.print("\n[bold]Supported Models:[/bold]")
-        for model_type in ["OpenAI", "Claude", "Hugging Face"]:
-            models = []
-            if model_type == "OpenAI":
-                models = [m for m, c in MODEL_CONFIGS.items() if c["type"] == "openai"]
-            elif model_type == "Claude":
-                models = [m for m, c in MODEL_CONFIGS.items() if c["type"] == "anthropic"]
-            else:
-                models = [m for m, c in MODEL_CONFIGS.items() if c["type"] == "hf"]
-            
-            console.print(f"  [cyan]{model_type}:[/cyan] {', '.join(models)}")
+        
+        # OpenAI models (excluding Mistral)
+        openai_models = [m for m, c in MODEL_CONFIGS.items() 
+                        if c["type"] == "openai" and not m.startswith(("mistral", "magistral"))]
+        console.print(f"  [cyan]OpenAI:[/cyan] {', '.join(openai_models)}")
+        
+        # Claude models
+        claude_models = [m for m, c in MODEL_CONFIGS.items() if c["type"] == "anthropic"]
+        console.print(f"  [cyan]Claude:[/cyan] {', '.join(claude_models)}")
+        
+        # Mistral-compatible models
+        mistral_models = [m for m in MODEL_CONFIGS.keys() if m.startswith(("mistral", "magistral"))]
+        console.print(f"  [cyan]Mistral-compatible:[/cyan] {', '.join(mistral_models)}")
+        
+        # Other Open Source models
+        other_models = [m for m, c in MODEL_CONFIGS.items() 
+                       if c["type"] == "hf" and not m.startswith(("mistral", "magistral"))]
+        console.print(f"  [cyan]Other Open Source:[/cyan] {', '.join(other_models)}")
         return
     
     # Validate required arguments when not listing models
